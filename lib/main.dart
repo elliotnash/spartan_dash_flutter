@@ -4,6 +4,7 @@ import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_acrylic/flutter_acrylic.dart';
 import 'package:spannable_grid/spannable_grid.dart';
+import 'package:spartan_dash_flutter/const.dart';
 import 'package:spartan_dash_flutter/models/dash_layout.dart';
 import 'package:spartan_dash_flutter/models/widgets.dart';
 import 'package:system_theme/system_theme.dart';
@@ -73,6 +74,25 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
+final widgets = [
+  const SelectorData(
+    name: "Drive Mode",
+    uuid: "0",
+    options: {
+      "arcade": "Arcade",
+      "curvature": "Curvature"
+    },
+    selected: "arcade",
+  ),
+  const ToggleData(
+    name: "Robot Status",
+    uuid: "1",
+    toggleType: ToggleType.slider,
+    text: "Robot working",
+    checked: false
+  ),
+];
+
 class _HomePageState extends State<HomePage> {
   final layout = const DashLayout(
     columns: 3,
@@ -95,35 +115,39 @@ class _HomePageState extends State<HomePage> {
     ],
   );
 
-  final widgets = const [
-    SelectorData(
-      name: "Drive Mode",
-      uuid: "0",
-      options: {
-        "arcade": "Arcade",
-        "curvature": "Curvature"
-      },
-      selected: "arcade",
-    ),
-    ToggleData(
-        name: "Robot Working",
-        uuid: "1",
-        toggleType: ToggleType.slider,
-        enabled: false
-    )
-  ];
-
   @override
   Widget build(BuildContext context) {
-    // return Center(
-    //   child: FilledButton(
-    //     onPressed: () {},
-    //     child: const Text("HI"),
-    //   )
-    // );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildTitleBar(),
+        Expanded(
+          child: SafeArea(
+            child: _buildGrid(),
+          )
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTitleBar() {
+    return Container(
+      height: 28,
+      // color: FluentTheme.of(context).accentColor,
+      child: Row(
+        mainAxisSize: MainAxisSize.max,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: const [
+          Text(kAppTitle),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGrid() {
     const double gridPadding = 4;
     return Padding(
-      padding: const EdgeInsets.all(gridPadding),
+      padding: const EdgeInsets.all(gridPadding).copyWith(top: 2),
       child: SpannableGrid(
         columns: layout.columns,
         rows: layout.rows,
@@ -133,16 +157,15 @@ class _HomePageState extends State<HomePage> {
           contentOpacity: 1,
           spacing: gridPadding,
         ),
+        // filter widgets to only those inside grid
         cells: layout.widgets.where((e) => e.column >= 0
             && e.column < layout.columns
             && e.row >= 0
             && e.row < layout.rows
         ).map((e) {
           // Clamp the span to within the grid.
-          final columnEnd = (e.column + e.columnSpan).clamp(0, layout.columns);
-          final rowEnd = (e.row + e.rowSpan).clamp(0, layout.rows);
-          final columnSpan = columnEnd - e.column;
-          final rowSpan = rowEnd - e.row;
+          final columnSpan = e.columnSpan.clamp(1, layout.columns - e.column);
+          final rowSpan = e.rowSpan.clamp(1, layout.rows - e.row);
 
           return SpannableGridCellData(
             id: e,
@@ -150,32 +173,138 @@ class _HomePageState extends State<HomePage> {
             row: e.row+1,
             columnSpan: columnSpan,
             rowSpan: rowSpan,
-            child: Container(
-              color: Colors.green,
-            ),
+            child: SpartanWidget(e.widgetUuid),
           );
         }).toList(),
-        //  [
-        //   SpannableGridCellData(
-        //     id: "0",
-        //     column: 1,
-        //     row: 1,
-        //     columnSpan: 2,
-        //     rowSpan: 2,
-        //     child: Container(
-        //       color: Colors.green,
-        //     ),
-        //   ),
-        //   SpannableGridCellData(
-        //     id: "1",
-        //     column: 4,
-        //     row: 3,
-        //     child: Container(
-        //       color: Colors.red,
-        //     ),
-        //   ),
-        // ]
       ),
+    );
+  }
+}
+
+class SpartanWidget extends StatefulWidget {
+  final String uuid;
+  const SpartanWidget(this.uuid, {
+    super.key,
+  });
+
+  @override
+  State<SpartanWidget> createState() => _SpartanWidgetState();
+}
+
+class _SpartanWidgetState extends State<SpartanWidget> {
+  @override
+  Widget build(BuildContext context) {
+    final data = widgets.firstWhere((e) => e.uuid == widget.uuid);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 6),
+          child: Text(data.name),
+        ),
+        const SizedBox(height: 6),
+        Expanded(
+          child: SizedBox(
+            width: double.infinity,
+            height: double.infinity,
+            child: Card(
+              child: _buildContent(data),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _onDataChanged(WidgetData data) {
+    setState(() {
+      widgets[widgets.indexWhere((e) => e.uuid == data.uuid)] = data;
+    });
+  }
+
+  Widget _buildContent(WidgetData data) {
+    if (data is SelectorData) {
+      return SelectorWidget(data, _onDataChanged);
+    } else if (data is ToggleData) {
+      return ToggleWidget(data, _onDataChanged);
+    } else {
+      return const UnsupportedWidget();
+    }
+  }
+}
+
+class SelectorWidget extends StatelessWidget {
+  final SelectorData data;
+  final void Function(SelectorData) onChanged;
+  const SelectorWidget(this.data, this.onChanged, {
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.topCenter,
+      child: SizedBox(
+        width: double.infinity,
+        child: ComboBox(
+          value: data.selected,
+          onChanged: (selected) {
+            if (selected != data.selected) {
+              onChanged(data.copyWith(selected: selected));
+            }
+          },
+          items: [
+            for (final option in data.options.entries)
+              ComboBoxItem(
+                value: option.key,
+                child: Text(option.value),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class ToggleWidget extends StatelessWidget {
+  final ToggleData data;
+  final void Function(ToggleData) onChanged;
+  const ToggleWidget(this.data, this.onChanged, {
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.topCenter,
+      child: SizedBox(
+        width: double.infinity,
+        child: ToggleButton(
+          checked: data.checked,
+          onChanged: (checked) {
+            if (checked != data.checked) {
+              onChanged(data.copyWith(checked: checked));
+            }
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6.0),
+            child: Text(data.checked ? data.checkedText ?? data.text : data.text),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class UnsupportedWidget extends StatelessWidget {
+  const UnsupportedWidget({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Text("Unsupported Widget"),
     );
   }
 }

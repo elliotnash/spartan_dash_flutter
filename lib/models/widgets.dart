@@ -20,7 +20,7 @@ class WidgetData with _$WidgetData {
     required String name,
     required String uuid,
     required Map<String, String> options,
-    required String selected,
+    required String? selected,
   }) = SelectorData;
 
   @FreezedUnionValue('toggle')
@@ -28,7 +28,9 @@ class WidgetData with _$WidgetData {
     required String name,
     required String uuid,
     required ToggleType toggleType,
-    required bool enabled,
+    required String text,
+    required bool checked,
+    String? checkedText,
   }) = ToggleData;
 
   factory WidgetData.fromJson(Map<String, Object?> json)
