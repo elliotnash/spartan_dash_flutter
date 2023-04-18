@@ -131,7 +131,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildTitleBar() {
-    return Container(
+    return SizedBox(
       height: 28,
       // color: FluentTheme.of(context).accentColor,
       child: Row(
@@ -146,37 +146,44 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildGrid() {
     const double gridPadding = 4;
-    return Padding(
-      padding: const EdgeInsets.all(gridPadding).copyWith(top: 2),
-      child: SpannableGrid(
-        columns: layout.columns,
-        rows: layout.rows,
-        editingStrategy: SpannableGridEditingStrategy.disabled(),
-        style: const SpannableGridStyle(
-          backgroundColor: Colors.transparent,
-          contentOpacity: 1,
-          spacing: gridPadding,
-        ),
-        // filter widgets to only those inside grid
-        cells: layout.widgets.where((e) => e.column >= 0
-            && e.column < layout.columns
-            && e.row >= 0
-            && e.row < layout.rows
-        ).map((e) {
-          // Clamp the span to within the grid.
-          final columnSpan = e.columnSpan.clamp(1, layout.columns - e.column);
-          final rowSpan = e.rowSpan.clamp(1, layout.rows - e.row);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = constraints.maxWidth ~/ widgetWidth;
+        final rows = constraints.maxHeight ~/ widgetHeight;
 
-          return SpannableGridCellData(
-            id: e,
-            column: e.column+1,
-            row: e.row+1,
-            columnSpan: columnSpan,
-            rowSpan: rowSpan,
-            child: SpartanWidget(e.widgetUuid),
-          );
-        }).toList(),
-      ),
+        return Padding(
+          padding: const EdgeInsets.all(gridPadding).copyWith(top: 2),
+          child: SpannableGrid(
+            columns: columns,
+            rows: rows,
+            editingStrategy: SpannableGridEditingStrategy.disabled(),
+            style: const SpannableGridStyle(
+              backgroundColor: Colors.transparent,
+              contentOpacity: 1,
+              spacing: gridPadding,
+            ),
+            // filter widgets to only those inside grid
+            cells: layout.widgets.where((e) => e.column >= 0
+                && e.column < columns
+                && e.row >= 0
+                && e.row < rows
+            ).map((e) {
+              // Clamp the span to within the grid.
+              final columnSpan = e.columnSpan.clamp(1, columns - e.column);
+              final rowSpan = e.rowSpan.clamp(1, rows - e.row);
+
+              return SpannableGridCellData(
+                id: e,
+                column: e.column+1,
+                row: e.row+1,
+                columnSpan: columnSpan,
+                rowSpan: rowSpan,
+                child: SpartanWidget(e.widgetUuid),
+              );
+            }).toList(),
+          ),
+        );
+      }
     );
   }
 }
