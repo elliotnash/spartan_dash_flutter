@@ -97,9 +97,15 @@ class _HomePageState extends State<HomePage> {
         position: SplitPosition.top,
       ),
       WidgetPlacement.split(
-        widgetUuid: "1",
-        column: 1,
+        widgetUuid: "0",
+        column: 0,
         row: 0,
+        position: SplitPosition.bottom,
+      ),
+      WidgetPlacement.split(
+        widgetUuid: "1",
+        column: 0,
+        row: 1,
         position: SplitPosition.top,
       ),
     ],
@@ -182,6 +188,7 @@ class _HomePageState extends State<HomePage> {
                 columnSpan = placement.columnSpan;
                 rowSpan = placement.rowSpan;
               }
+
               // Clamp the span to within the grid.
               columnSpan = columnSpan.clamp(1, columns - placement.column);
               rowSpan = rowSpan.clamp(1, rows - placement.row);
@@ -189,7 +196,10 @@ class _HomePageState extends State<HomePage> {
               return SpannableGridCellData(
                 id: placement,
                 column: (placement.column * 2) + 1,
-                row: (placement.row * 2) + 1,
+                row: (placement.row * 2) +
+                    ((placement is SplitWidgetPlacement
+                        && placement.position == SplitPosition.bottom
+                    ) ? 2 : 1),
                 columnSpan: columnSpan * 2,
                 rowSpan: rowSpan * ((placement is SplitWidgetPlacement) ? 1 : 2),
                 child: SpartanWidget(placement.widgetUuid),
