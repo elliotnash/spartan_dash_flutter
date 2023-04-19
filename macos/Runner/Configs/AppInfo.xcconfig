@@ -5,10 +5,10 @@
 // 'flutter create' template.
 
 // The application's name. By default this is also the title of the Flutter window.
-PRODUCT_NAME = spartan_dash_flutter
+PRODUCT_NAME = Spartan Dash
 
 // The application's bundle identifier
 PRODUCT_BUNDLE_IDENTIFIER = org.chsrobotics.dash.spartanDashFlutter
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2023 org.chsrobotics.dash. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright © 2023 Spartan Robotics All rights reserved.

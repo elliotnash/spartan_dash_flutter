@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_acrylic/flutter_acrylic.dart';
@@ -23,19 +21,13 @@ bool get isDesktop {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // if it's not on the web, windows or android, load the accent color
-  if (!kIsWeb &&
-      const [
-        TargetPlatform.windows,
-        TargetPlatform.android,
-      ].contains(defaultTargetPlatform)) {
-    await SystemTheme.accentColor.load();
-  }
+  await SystemTheme.accentColor.load();
 
   if (isDesktop) {
     await Window.initialize();
-    await Window.setEffect(effect: WindowEffect.mica);
     await WindowManager.instance.ensureInitialized();
+
+    await Window.setEffect(effect: WindowEffect.mica);
     windowManager.waitUntilReadyToShow().then((_) async {
       // Hide title bar
       await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
@@ -84,12 +76,17 @@ final widgets = [
     },
     selected: "arcade",
   ),
-  const ToggleData(
-    name: "Robot Status",
+  const SplitData(
     uuid: "1",
-    toggleType: ToggleType.slider,
-    text: "Robot working",
-    checked: false
+    top: "2",
+    bottom: "2",
+  ),
+  const ToggleData(
+      name: "Robot Status",
+      uuid: "2",
+      toggleType: ToggleType.slider,
+      text: "Robot working",
+      checked: false
   ),
 ];
 
@@ -107,7 +104,7 @@ class _HomePageState extends State<HomePage> {
       ),
       WidgetPlacement(
         widgetUuid: "1",
-        column: 2,
+        column: 0,
         row: 1,
         columnSpan: 1,
         rowSpan: 1,
@@ -131,28 +128,46 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildTitleBar() {
-    return SizedBox(
-      height: 28,
-      // color: FluentTheme.of(context).accentColor,
-      child: Row(
-        mainAxisSize: MainAxisSize.max,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: const [
-          Text(kAppTitle),
-        ],
-      ),
-    );
+    if (defaultTargetPlatform == TargetPlatform.macOS) {
+      return SizedBox(
+        height: kMacOSTitleBarHeight,
+        child: Row(
+          mainAxisSize: MainAxisSize.max,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: const [
+            Text(kAppTitle),
+          ],
+        ),
+      );
+    } else if (defaultTargetPlatform == TargetPlatform.windows) {
+      return SizedBox(
+        height: kWindowsTitleBarHeight,
+        child: Row(
+          mainAxisSize: MainAxisSize.max,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: const [
+            Text(kAppTitle),
+          ],
+        ),
+      );
+    } else {
+      return Container();
+    }
+    // For switch expressions
+    // return switch (defaultTargetPlatform) {
+    //   TargetPlatform.android => Container();
+    //   _ => Container()
+    // }
   }
 
   Widget _buildGrid() {
-    const double gridPadding = 4;
     return LayoutBuilder(
       builder: (context, constraints) {
-        final columns = constraints.maxWidth ~/ widgetWidth;
-        final rows = constraints.maxHeight ~/ widgetHeight;
+        final columns = constraints.maxWidth ~/ kWidgetWidth;
+        final rows = constraints.maxHeight ~/ kWidgetHeight;
 
         return Padding(
-          padding: const EdgeInsets.all(gridPadding).copyWith(top: 2),
+          padding: const EdgeInsets.all(kGridPadding).copyWith(top: 2),
           child: SpannableGrid(
             columns: columns,
             rows: rows,
@@ -160,7 +175,7 @@ class _HomePageState extends State<HomePage> {
             style: const SpannableGridStyle(
               backgroundColor: Colors.transparent,
               contentOpacity: 1,
-              spacing: gridPadding,
+              spacing: kGridPadding,
             ),
             // filter widgets to only those inside grid
             cells: layout.widgets.where((e) => e.column >= 0
@@ -202,25 +217,16 @@ class _SpartanWidgetState extends State<SpartanWidget> {
   @override
   Widget build(BuildContext context) {
     final data = widgets.firstWhere((e) => e.uuid == widget.uuid);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 6),
-          child: Text(data.name),
-        ),
-        const SizedBox(height: 6),
-        Expanded(
-          child: SizedBox(
-            width: double.infinity,
-            height: double.infinity,
-            child: Card(
-              child: _buildContent(data),
-            ),
-          ),
-        ),
-      ],
-    );
+
+    if (data is SelectorData) {
+      return SelectorWidget(data, _onDataChanged);
+    } else if (data is ToggleData) {
+      return ToggleWidget(data, _onDataChanged);
+    } else if (data is SplitData) {
+      return SplitWidget(data);
+    } else {
+      return const UnsupportedWidget();
+    }
   }
 
   void _onDataChanged(WidgetData data) {
@@ -228,15 +234,41 @@ class _SpartanWidgetState extends State<SpartanWidget> {
       widgets[widgets.indexWhere((e) => e.uuid == data.uuid)] = data;
     });
   }
+}
 
-  Widget _buildContent(WidgetData data) {
-    if (data is SelectorData) {
-      return SelectorWidget(data, _onDataChanged);
-    } else if (data is ToggleData) {
-      return ToggleWidget(data, _onDataChanged);
-    } else {
-      return const UnsupportedWidget();
-    }
+class WidgetCard extends StatelessWidget {
+  final Widget child;
+  final String? title;
+  const WidgetCard({
+    required this.child,
+    this.title,
+    super.key
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (title != null)
+          Padding(
+            padding: const EdgeInsets.only(
+              left: kWidgetTitleLeftPadding,
+              bottom: kWidgetTitleBottomPadding,
+            ),
+            child: Text(title!),
+          ),
+        Expanded(
+          child: SizedBox(
+            width: double.infinity,
+            height: double.infinity,
+            child: Card(
+              child: child,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -249,24 +281,27 @@ class SelectorWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.topCenter,
-      child: SizedBox(
-        width: double.infinity,
-        child: ComboBox(
-          value: data.selected,
-          onChanged: (selected) {
-            if (selected != data.selected) {
-              onChanged(data.copyWith(selected: selected));
-            }
-          },
-          items: [
-            for (final option in data.options.entries)
-              ComboBoxItem(
-                value: option.key,
-                child: Text(option.value),
-              ),
-          ],
+    return WidgetCard(
+      title: data.name,
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: SizedBox(
+          width: double.infinity,
+          child: ComboBox(
+            value: data.selected,
+            onChanged: (selected) {
+              if (selected != data.selected) {
+                onChanged(data.copyWith(selected: selected));
+              }
+            },
+            items: [
+              for (final option in data.options.entries)
+                ComboBoxItem(
+                  value: option.key,
+                  child: Text(option.value),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -282,23 +317,51 @@ class ToggleWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.topCenter,
-      child: SizedBox(
-        width: double.infinity,
-        child: ToggleButton(
-          checked: data.checked,
-          onChanged: (checked) {
-            if (checked != data.checked) {
-              onChanged(data.copyWith(checked: checked));
-            }
-          },
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 6.0),
-            child: Text(data.checked ? data.checkedText ?? data.text : data.text),
+    return WidgetCard(
+      title: data.name,
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: SizedBox(
+          width: double.infinity,
+          child: ToggleButton(
+            checked: data.checked,
+            onChanged: (checked) {
+              if (checked != data.checked) {
+                onChanged(data.copyWith(checked: checked));
+              }
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6.0),
+              child: Text(data.checked ? data.checkedText ?? data.text : data.text),
+            ),
           ),
         ),
       ),
+    );
+  }
+}
+
+class SplitWidget extends StatelessWidget {
+  final SplitData data;
+  const SplitWidget(this.data, {
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        _buildChild(data.top),
+        const SizedBox(height: kGridPadding * 2),
+        _buildChild(data.bottom),
+      ],
+    );
+  }
+
+  Widget _buildChild(String? uuid) {
+    return Flexible(
+      flex: 1,
+      child: uuid == null ? Container() : SpartanWidget(uuid),
     );
   }
 }
@@ -310,8 +373,10 @@ class UnsupportedWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Text("Unsupported Widget"),
+    return const WidgetCard(
+      child: Center(
+        child: Text("Unsupported Widget"),
+      ),
     );
   }
 }

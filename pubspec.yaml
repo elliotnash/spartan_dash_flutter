@@ -53,6 +53,9 @@ dev_dependencies:
   freezed: ^2.3.2
   json_serializable: ^6.6.1
 
+dependency_overrides:
+  intl: ^0.18.1
+
 # The following section is specific to Flutter packages.
 flutter:
 
