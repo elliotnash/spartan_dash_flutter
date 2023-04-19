@@ -33,14 +33,6 @@ class WidgetData with _$WidgetData {
     String? checkedText,
   }) = ToggleData;
 
-  @FreezedUnionValue('split')
-  const factory WidgetData.split({
-    required String uuid,
-    String? top,
-    String? bottom,
-    String? name,
-  }) = SplitData;
-
   factory WidgetData.fromJson(Map<String, Object?> json)
   => _$WidgetDataFromJson(json);
 

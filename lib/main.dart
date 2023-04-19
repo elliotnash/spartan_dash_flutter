@@ -76,14 +76,9 @@ final widgets = [
     },
     selected: "arcade",
   ),
-  const SplitData(
-    uuid: "1",
-    top: "2",
-    bottom: "2",
-  ),
   const ToggleData(
       name: "Robot Status",
-      uuid: "2",
+      uuid: "1",
       toggleType: ToggleType.slider,
       text: "Robot working",
       checked: false
@@ -95,19 +90,17 @@ class _HomePageState extends State<HomePage> {
     columns: 3,
     rows: 2,
     widgets: [
-      WidgetPlacement(
+      WidgetPlacement.split(
         widgetUuid: "0",
         column: 0,
         row: 0,
-        columnSpan: 1,
-        rowSpan: 1,
+        position: SplitPosition.top,
       ),
-      WidgetPlacement(
+      WidgetPlacement.split(
         widgetUuid: "1",
-        column: 0,
-        row: 1,
-        columnSpan: 1,
-        rowSpan: 1,
+        column: 1,
+        row: 0,
+        position: SplitPosition.top,
       ),
     ],
   );
@@ -169,8 +162,8 @@ class _HomePageState extends State<HomePage> {
         return Padding(
           padding: const EdgeInsets.all(kGridPadding).copyWith(top: 2),
           child: SpannableGrid(
-            columns: columns,
-            rows: rows,
+            columns: columns * 2,
+            rows: rows * 2,
             editingStrategy: SpannableGridEditingStrategy.disabled(),
             style: const SpannableGridStyle(
               backgroundColor: Colors.transparent,
@@ -182,18 +175,24 @@ class _HomePageState extends State<HomePage> {
                 && e.column < columns
                 && e.row >= 0
                 && e.row < rows
-            ).map((e) {
+            ).map((placement) {
+              var columnSpan = 1;
+              var rowSpan = 1;
+              if (placement is FullWidgetPlacement) {
+                columnSpan = placement.columnSpan;
+                rowSpan = placement.rowSpan;
+              }
               // Clamp the span to within the grid.
-              final columnSpan = e.columnSpan.clamp(1, columns - e.column);
-              final rowSpan = e.rowSpan.clamp(1, rows - e.row);
+              columnSpan = columnSpan.clamp(1, columns - placement.column);
+              rowSpan = rowSpan.clamp(1, rows - placement.row);
 
               return SpannableGridCellData(
-                id: e,
-                column: e.column+1,
-                row: e.row+1,
-                columnSpan: columnSpan,
-                rowSpan: rowSpan,
-                child: SpartanWidget(e.widgetUuid),
+                id: placement,
+                column: (placement.column * 2) + 1,
+                row: (placement.row * 2) + 1,
+                columnSpan: columnSpan * 2,
+                rowSpan: rowSpan * ((placement is SplitWidgetPlacement) ? 1 : 2),
+                child: SpartanWidget(placement.widgetUuid),
               );
             }).toList(),
           ),
@@ -222,8 +221,6 @@ class _SpartanWidgetState extends State<SpartanWidget> {
       return SelectorWidget(data, _onDataChanged);
     } else if (data is ToggleData) {
       return ToggleWidget(data, _onDataChanged);
-    } else if (data is SplitData) {
-      return SplitWidget(data);
     } else {
       return const UnsupportedWidget();
     }
@@ -239,9 +236,11 @@ class _SpartanWidgetState extends State<SpartanWidget> {
 class WidgetCard extends StatelessWidget {
   final Widget child;
   final String? title;
+  final bool expanded;
   const WidgetCard({
     required this.child,
     this.title,
+    this.expanded = false,
     super.key
   });
 
@@ -258,15 +257,16 @@ class WidgetCard extends StatelessWidget {
             ),
             child: Text(title!),
           ),
-        Expanded(
-          child: SizedBox(
-            width: double.infinity,
-            height: double.infinity,
+        if (expanded)
+          Expanded(
             child: Card(
               child: child,
             ),
+          )
+        else
+          Card(
+            child: child,
           ),
-        ),
       ],
     );
   }
@@ -331,37 +331,12 @@ class ToggleWidget extends StatelessWidget {
               }
             },
             child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6.0),
+              padding: const EdgeInsets.symmetric(vertical: kToggleButtonWidgetPadding),
               child: Text(data.checked ? data.checkedText ?? data.text : data.text),
             ),
           ),
         ),
       ),
-    );
-  }
-}
-
-class SplitWidget extends StatelessWidget {
-  final SplitData data;
-  const SplitWidget(this.data, {
-    super.key,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        _buildChild(data.top),
-        const SizedBox(height: kGridPadding * 2),
-        _buildChild(data.bottom),
-      ],
-    );
-  }
-
-  Widget _buildChild(String? uuid) {
-    return Flexible(
-      flex: 1,
-      child: uuid == null ? Container() : SpartanWidget(uuid),
     );
   }
 }

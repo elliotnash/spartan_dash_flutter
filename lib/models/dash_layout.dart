@@ -27,15 +27,29 @@ class DashLayout with _$DashLayout {
   }
 }
 
-@freezed
+enum SplitPosition {
+  top,
+  bottom
+}
+
+@Freezed(unionKey: 'type')
 class WidgetPlacement with _$WidgetPlacement {
+  @FreezedUnionValue('full')
   const factory WidgetPlacement({
     required String widgetUuid,
     required int column,
     required int row,
     required int columnSpan,
     required int rowSpan,
-  }) = _WidgetPlacement;
+  }) = FullWidgetPlacement;
+
+  @FreezedUnionValue('split')
+  const factory WidgetPlacement.split({
+    required String widgetUuid,
+    required int column,
+    required int row,
+    required SplitPosition position,
+  }) = SplitWidgetPlacement;
 
   factory WidgetPlacement.fromJson(Map<String, Object?> json)
       => _$WidgetPlacementFromJson(json);
