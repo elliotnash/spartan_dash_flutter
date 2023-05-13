@@ -38,10 +38,10 @@ dependencies:
   window_manager: ^0.3.2
   hooks_riverpod: ^2.3.4
   riverpod_annotation: ^2.0.4
-  cbor: ^5.1.2
   freezed_annotation: ^2.2.0
   json_annotation: ^4.8.0
   spannable_grid: ^0.3.0
+  web_socket_channel: ^2.4.0
 
 dev_dependencies:
   flutter_test:

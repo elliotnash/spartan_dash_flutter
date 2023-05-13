@@ -1,7 +1,5 @@
-import 'package:cbor/simple.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:flutter/foundation.dart';
-import 'package:spartan_dash_flutter/util/cbor_extensions.dart';
 
 part 'dash_layout.freezed.dart';
 part 'dash_layout.g.dart';
@@ -18,13 +16,6 @@ class DashLayout with _$DashLayout {
 
   factory DashLayout.fromJson(Map<String, Object?> json)
       => _$DashLayoutFromJson(json);
-
-  factory DashLayout.fromCbor(List<int> data)
-      => _$DashLayoutFromJson((cbor.decode(data) as Map<dynamic, dynamic>).toJsonMap());
-
-  List<int> toCbor() {
-    return cbor.encode(toJson());
-  }
 }
 
 enum SplitPosition {

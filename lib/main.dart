@@ -1,10 +1,15 @@
+import 'dart:convert';
+
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_acrylic/flutter_acrylic.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:spannable_grid/spannable_grid.dart';
 import 'package:spartan_dash_flutter/const.dart';
+import 'package:spartan_dash_flutter/models/dash_event.dart';
 import 'package:spartan_dash_flutter/models/dash_layout.dart';
 import 'package:spartan_dash_flutter/models/widgets.dart';
+import 'package:spartan_dash_flutter/providers/event_provider.dart';
 import 'package:system_theme/system_theme.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -45,16 +50,18 @@ class SpartanDash extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return FluentApp(
-      theme: FluentThemeData(
-        accentColor: SystemTheme.accentColor.accent.toAccentColor(),
+    return ProviderScope(
+      child: FluentApp(
+        theme: FluentThemeData(
+          accentColor: SystemTheme.accentColor.accent.toAccentColor(),
+        ),
+        darkTheme: FluentThemeData(
+          brightness: Brightness.dark,
+          accentColor: SystemTheme.accentColor.accent.toAccentColor(),
+        ),
+        themeMode: ThemeMode.system,
+        home: const HomePage(),
       ),
-      darkTheme: FluentThemeData(
-        brightness: Brightness.dark,
-        accentColor: SystemTheme.accentColor.accent.toAccentColor(),
-      ),
-      themeMode: ThemeMode.system,
-      home: const HomePage(),
     );
   }
 }
@@ -79,7 +86,7 @@ final widgets = [
   const ToggleData(
       name: "Robot Status",
       uuid: "1",
-      toggleType: ToggleType.slider,
+      style: ToggleStyle.slider,
       text: "Robot working",
       checked: false
   ),
@@ -102,11 +109,12 @@ class _HomePageState extends State<HomePage> {
         row: 0,
         position: SplitPosition.bottom,
       ),
-      WidgetPlacement.split(
+      WidgetPlacement(
         widgetUuid: "1",
         column: 0,
         row: 1,
-        position: SplitPosition.top,
+        columnSpan: 1,
+        rowSpan: 1,
       ),
     ],
   );
@@ -133,8 +141,27 @@ class _HomePageState extends State<HomePage> {
         child: Row(
           mainAxisSize: MainAxisSize.max,
           mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
-            Text(kAppTitle),
+          children: [
+            Consumer(
+              builder: (context, ref, _) {
+                final events = ref.watch(eventProvider);
+                return events.when(
+                  loading: () => const ProgressRing(),
+                  error: (error, st) => Text(error.toString()),
+                  data: (event) {
+                    if (event is DashLayoutEvent) {
+                      return Text(event.layout.toString());
+                    } else if (event is WidgetEvent) {
+                      return Text(event.widget.name);
+                    } else {
+                      return Container();
+                    }
+                  }
+                );
+                return Text(kAppTitle);
+              },
+            ),
+            // Text(kAppTitle),
           ],
         ),
       );
