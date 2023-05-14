@@ -1,7 +1,6 @@
-import 'dart:convert';
-
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart' as material;
 import 'package:flutter_acrylic/flutter_acrylic.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:spannable_grid/spannable_grid.dart';
@@ -10,6 +9,7 @@ import 'package:spartan_dash_flutter/models/dash_event.dart';
 import 'package:spartan_dash_flutter/models/dash_layout.dart';
 import 'package:spartan_dash_flutter/models/widgets.dart';
 import 'package:spartan_dash_flutter/providers/event_provider.dart';
+import 'package:spartan_dash_flutter/widgets/spartan_widget.dart';
 import 'package:system_theme/system_theme.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -36,6 +36,7 @@ void main() async {
       // Hide title bar
       await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
       await windowManager.setMinimumSize(const Size(600, 400));
+      // Enable transparent (mica) effect
       await Window.setEffect(effect: WindowEffect.mica);
       await windowManager.show();
     });
@@ -50,14 +51,19 @@ class SpartanDash extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
+    const navTheme = NavigationPaneThemeData(
+        backgroundColor: Colors.transparent
+    );
     return ProviderScope(
       child: FluentApp(
         theme: FluentThemeData(
           accentColor: SystemTheme.accentColor.accent.toAccentColor(),
+          navigationPaneTheme: navTheme,
         ),
         darkTheme: FluentThemeData(
           brightness: Brightness.dark,
           accentColor: SystemTheme.accentColor.accent.toAccentColor(),
+          navigationPaneTheme: navTheme,
         ),
         themeMode: ThemeMode.system,
         home: const HomePage(),
@@ -119,6 +125,8 @@ class _HomePageState extends State<HomePage> {
     ],
   );
 
+  var selectedIndex = 0;
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -127,7 +135,34 @@ class _HomePageState extends State<HomePage> {
         _buildTitleBar(),
         Expanded(
           child: SafeArea(
-            child: _buildGrid(),
+            child: NavigationView(
+              pane: NavigationPane(
+                selected: selectedIndex,
+                onChanged: (index) => setState(() => selectedIndex = index),
+                displayMode: PaneDisplayMode.compact,
+                items: [
+                  PaneItemHeader(header: const Text("Tabs")),
+                  PaneItem(
+                      icon: Icon(material.Icons.tab),
+                    title: Text("Tab 1"),
+                    body: _buildGrid()
+                  ),
+                  PaneItem(
+                    icon: Icon(material.Icons.tab),
+                    title: Text("Tab 2"),
+                    body: _buildGrid()
+                  )
+                ],
+                footerItems: [
+                  PaneItemHeader(header: const Text("More")),
+                  PaneItem(
+                      icon: Icon(FluentIcons.settings),
+                      title: Text("Settings"),
+                      body: _buildGrid()
+                  ),
+                ]
+              )
+            )
           )
         ),
       ],
@@ -241,160 +276,6 @@ class _HomePageState extends State<HomePage> {
           ),
         );
       }
-    );
-  }
-}
-
-class SpartanWidget extends StatefulWidget {
-  final String uuid;
-  const SpartanWidget(this.uuid, {
-    super.key,
-  });
-
-  @override
-  State<SpartanWidget> createState() => _SpartanWidgetState();
-}
-
-class _SpartanWidgetState extends State<SpartanWidget> {
-  @override
-  Widget build(BuildContext context) {
-    final data = widgets.firstWhere((e) => e.uuid == widget.uuid);
-
-    if (data is SelectorData) {
-      return SelectorWidget(data, _onDataChanged);
-    } else if (data is ToggleData) {
-      return ToggleWidget(data, _onDataChanged);
-    } else {
-      return const UnsupportedWidget();
-    }
-  }
-
-  void _onDataChanged(WidgetData data) {
-    setState(() {
-      widgets[widgets.indexWhere((e) => e.uuid == data.uuid)] = data;
-    });
-  }
-}
-
-class WidgetCard extends StatelessWidget {
-  final Widget child;
-  final String? title;
-  final bool expanded;
-  const WidgetCard({
-    required this.child,
-    this.title,
-    this.expanded = false,
-    super.key
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (title != null)
-          Padding(
-            padding: const EdgeInsets.only(
-              left: kWidgetTitleLeftPadding,
-              bottom: kWidgetTitleBottomPadding,
-            ),
-            child: Text(title!),
-          ),
-        if (expanded)
-          Expanded(
-            child: Card(
-              child: child,
-            ),
-          )
-        else
-          Card(
-            child: child,
-          ),
-      ],
-    );
-  }
-}
-
-class SelectorWidget extends StatelessWidget {
-  final SelectorData data;
-  final void Function(SelectorData) onChanged;
-  const SelectorWidget(this.data, this.onChanged, {
-    super.key,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return WidgetCard(
-      title: data.name,
-      child: Align(
-        alignment: Alignment.topCenter,
-        child: SizedBox(
-          width: double.infinity,
-          child: ComboBox(
-            value: data.selected,
-            onChanged: (selected) {
-              if (selected != data.selected) {
-                onChanged(data.copyWith(selected: selected));
-              }
-            },
-            items: [
-              for (final option in data.options.entries)
-                ComboBoxItem(
-                  value: option.key,
-                  child: Text(option.value),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class ToggleWidget extends StatelessWidget {
-  final ToggleData data;
-  final void Function(ToggleData) onChanged;
-  const ToggleWidget(this.data, this.onChanged, {
-    super.key,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return WidgetCard(
-      title: data.name,
-      child: Align(
-        alignment: Alignment.topCenter,
-        child: SizedBox(
-          width: double.infinity,
-          child: ToggleButton(
-            checked: data.checked,
-            onChanged: (checked) {
-              if (checked != data.checked) {
-                onChanged(data.copyWith(checked: checked));
-              }
-            },
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: kToggleButtonWidgetPadding),
-              child: Text(data.checked ? data.checkedText ?? data.text : data.text),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class UnsupportedWidget extends StatelessWidget {
-  const UnsupportedWidget({
-    super.key,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return const WidgetCard(
-      child: Center(
-        child: Text("Unsupported Widget"),
-      ),
     );
   }
 }
