@@ -32,11 +32,11 @@ void main() async {
     await Window.initialize();
     await WindowManager.instance.ensureInitialized();
 
-    await Window.setEffect(effect: WindowEffect.mica);
     windowManager.waitUntilReadyToShow().then((_) async {
       // Hide title bar
       await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
       await windowManager.setMinimumSize(const Size(600, 400));
+      await Window.setEffect(effect: WindowEffect.mica);
       await windowManager.show();
     });
   }
@@ -135,8 +135,8 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildTitleBar() {
-    if (defaultTargetPlatform == TargetPlatform.macOS) {
-      return SizedBox(
+    return switch (defaultTargetPlatform) {
+      TargetPlatform.macOS => SizedBox(
         height: kMacOSTitleBarHeight,
         child: Row(
           mainAxisSize: MainAxisSize.max,
@@ -146,44 +146,50 @@ class _HomePageState extends State<HomePage> {
               builder: (context, ref, _) {
                 final events = ref.watch(eventProvider);
                 return events.when(
-                  loading: () => const ProgressRing(),
-                  error: (error, st) => Text(error.toString()),
-                  data: (event) {
-                    if (event is DashLayoutEvent) {
-                      return Text(event.layout.toString());
-                    } else if (event is WidgetEvent) {
-                      return Text(event.widget.name);
-                    } else {
-                      return Container();
+                    loading: () => const ProgressRing(),
+                    error: (error, st) => Text(error.toString()),
+                    data: (event) {
+                      if (event is DashLayoutEvent) {
+                        return Text(event.layout.toString());
+                      } else if (event is WidgetEvent) {
+                        return Text(event.widget.name);
+                      } else {
+                        return Container();
+                      }
                     }
-                  }
                 );
-                return Text(kAppTitle);
               },
             ),
-            // Text(kAppTitle),
+            // Text(kAppTitle)
           ],
         ),
-      );
-    } else if (defaultTargetPlatform == TargetPlatform.windows) {
-      return SizedBox(
+      ),
+      TargetPlatform.windows => SizedBox(
         height: kWindowsTitleBarHeight,
-        child: Row(
-          mainAxisSize: MainAxisSize.max,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
-            Text(kAppTitle),
+        child: Stack(
+          children: [
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: Padding(
+                padding: EdgeInsets.only(left: kWindowsTitlePadding),
+                child: Text(kAppTitle),
+              ),
+            ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: SizedBox(
+                height: kWindowsTitleBarHeight,
+                child: WindowCaption(
+                  brightness: FluentTheme.of(context).brightness,
+                  backgroundColor: Colors.transparent,
+                ),
+              ),
+            )
           ],
         ),
-      );
-    } else {
-      return Container();
-    }
-    // For switch expressions
-    // return switch (defaultTargetPlatform) {
-    //   TargetPlatform.android => Container();
-    //   _ => Container()
-    // }
+      ),
+      _ => Container()
+    };
   }
 
   Widget _buildGrid() {

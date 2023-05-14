@@ -19,7 +19,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 version: 1.0.0+1
 
 environment:
-  sdk: '>=2.19.6 <3.0.0'
+  sdk: '>=3.0.0 <4.0.0'
   flutter: ">=3.0.0"
 
 # Dependencies specify other packages that your package needs in order to work.
@@ -32,7 +32,7 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.2
-  fluent_ui: ^4.4.2
+  fluent_ui: ^4.6.0
   system_theme: ^2.1.0
   flutter_acrylic: ^1.1.2
   window_manager: ^0.3.2
@@ -48,13 +48,10 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^2.0.0
   build_runner: ^2.3.3
-  custom_lint: ^0.3.3
-  riverpod_generator: ^2.1.6
-  freezed: ^2.3.2
+  custom_lint: ^0.4.0
+  riverpod_generator: ^2.2.3
+  freezed: ^2.3.4
   json_serializable: ^6.6.1
-
-dependency_overrides:
-  intl: ^0.18.1
 
 # The following section is specific to Flutter packages.
 flutter:

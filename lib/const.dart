@@ -2,6 +2,7 @@ const kAppTitle = "Spartan Dash";
 
 const double kMacOSTitleBarHeight = 38;
 const double kWindowsTitleBarHeight = 50;
+const double kWindowsTitlePadding = 16;
 
 const kWidgetWidth = 275;
 const kWidgetHeight = 180;
